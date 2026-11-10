@@ -1,0 +1,6 @@
+@page
+@model Pillar.Pages.Families.IndexModel
+@{ViewData["Title"]="Families";}
+<div class="page-heading"><div><span class="eyebrow">ROOTED IN RELATIONSHIP</span><h1>Families, through every season.</h1><p>Households bring people together. Their relationships tell the rest of the story.</p></div></div>
+<section class="panel"><h2>Create a household</h2><form method="post" class="filters"><label class="sr-only" for="family-name">Household name</label><input id="family-name" name="name" maxlength="200" placeholder="e.g. The Santos family" required /><button class="button">+ Create household</button></form><p class="small muted">Open a member's profile to link them to a household or record a move.</p></section>
+<div class="family-grid">@foreach(var f in Model.Families){var people=Model.People.Where(p=>p.G("household_id")==f.G("id")).ToList();<section class="panel"><div class="section-heading"><h2>@f.S("display_name")</h2><span class="subtle-count">@people.Count</span></div>@foreach(var p in people){<a class="person-row" asp-page="/Members/Details" asp-route-id="@p.G("id")"><span class="avatar">@p.S("first_name")[0]</span><span><strong>@p.S("first_name") @p.S("surname")</strong><small>@p.S("role") · @p.S("member_code")</small></span><span>→</span></a>}@if(people.Count==0){<p class="muted">Ready for its first members.</p>}</section>}</div>

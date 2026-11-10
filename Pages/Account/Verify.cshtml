@@ -1,0 +1,4 @@
+@page
+@model Pillar.Pages.Account.VerifyModel
+@{ ViewData["Title"] = "Verify sign in"; }
+<section class="panel narrow"><span class="eyebrow">ACCOUNT SECURITY</span><h1>One more step.</h1><p>Enter the code from your authenticator app.</p><form method="post"><div asp-validation-summary="All" class="validation"></div><input type="hidden" asp-for="ReturnUrl" /><label asp-for="Code"></label><input asp-for="Code" autocomplete="one-time-code" /><label class="check"><input asp-for="Recovery" /> Use a recovery code</label><button class="button">Verify and sign in</button></form></section>

@@ -1,0 +1,14 @@
+@page
+@model Pillar.Pages.Account.MfaModel
+@{ ViewData["Title"] = "Account security"; }
+<section class="panel narrow"><span class="eyebrow">PROTECT YOUR ACCOUNT</span><h1>Authenticator setup</h1>
+@if (Model.Enabled) { <p class="notice">Two-step verification is enabled.</p> }
+else {
+  <p>Scan this QR with your authenticator app, then enter the six-digit code to finish setup.</p>
+  <img class="auth-qr" src="data:image/png;base64,@Model.Qr" alt="Authenticator enrollment QR" />
+  <details><summary>Enter the key manually</summary><code class="wrap">@Model.Key</code></details>
+  <form method="post"><div asp-validation-summary="All" class="validation"></div><label asp-for="Code"></label><input asp-for="Code" inputmode="numeric" autocomplete="one-time-code" /><button class="button">Enable authenticator</button></form>
+}
+@if (Model.RecoveryCodes != null) { <h2>Save these recovery codes</h2><p>Store them privately. Each works once, and they will not be shown again.</p><div class="recovery-codes">@foreach (var code in Model.RecoveryCodes) { <code>@code</code> }</div> }
+@if (Model.Enabled) { <div class="actions"><a class="button" asp-page="/Events/Index">Continue to attendance →</a><a class="button secondary" asp-page="Password">Change password</a></div> }
+</section>

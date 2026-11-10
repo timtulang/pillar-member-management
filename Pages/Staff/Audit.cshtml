@@ -1,0 +1,4 @@
+@page
+@model Pillar.Pages.Staff.AuditModel
+@{ViewData["Title"]="Activity log";}
+<div class="page-heading"><div><span class="eyebrow">ACCOUNTABILITY & CARE</span><h1>Activity log</h1><p>A record of staff changes. Times are shown in UTC.</p></div></div><section class="panel"><div class="table-wrap"><table><thead><tr><th>When</th><th>Staff</th><th>Action</th><th>Record</th></tr></thead><tbody>@foreach(var e in Model.Events){<tr><td>@e.T("occurred_at")?.ToString("yyyy-MM-dd HH:mm:ss")</td><td>@e.S("actor")</td><td>@e.S("action")</td><td>@e.S("entity_type")<small class="mono">@e.S("entity_id")</small></td></tr>}</tbody></table></div><div class="pagination">@if(Model.PageNumber>1){<a asp-route-PageNumber="@(Model.PageNumber-1)">← Previous</a>}<span>Page @Model.PageNumber</span>@if(Model.Events.Count==50){<a asp-route-PageNumber="@(Model.PageNumber+1)">Next →</a>}</div></section>

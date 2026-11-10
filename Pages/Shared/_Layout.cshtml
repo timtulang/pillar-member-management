@@ -1,0 +1,41 @@
+@inject IConfiguration Config
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>@ViewData["Title"] · @Config["Pillar:ChurchName"]</title>
+  <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+  <script src="~/js/site.js" asp-append-version="true" defer></script>
+</head>
+<body>
+@if (User.Identity?.IsAuthenticated == true)
+{
+  <aside class="sidebar no-print">
+    <a class="brand" asp-page="/Index"><span class="brand-mark">P</span><span>PILLAR<small>FAMILY & COMMUNITY</small></span></a>
+    <div class="nav-label">CHURCH MANAGEMENT</div>
+    <nav aria-label="Main navigation">
+    @if (User.IsInRole("administrator") || User.IsInRole("membership_manager"))
+    {
+      <a asp-page="/Index">Overview <span>→</span></a>
+      <a asp-page="/Members/Index">Members <span>→</span></a>
+      <a asp-page="/Families/Index">Families <span>→</span></a>
+      <a asp-page="/Ministries/Index">Ministries & growth <span>→</span></a>
+    }
+      <a asp-page="/Events/Index">Attendance <span>→</span></a>
+    @if (User.IsInRole("administrator")) { <a asp-page="/Staff/Index">Staff & access <span>→</span></a><a asp-page="/Staff/Audit">Activity log <span>→</span></a> }
+    </nav>
+    <div class="sidebar-bottom"><p>Every person.<br />A place to belong.</p><a asp-page="/Account/Mfa">Account security</a><form asp-page="/Account/Logout" method="post"><button class="text-button">Sign out</button></form></div>
+  </aside>
+}
+<main class="@(User.Identity?.IsAuthenticated == true ? "workspace" : "public-workspace")">
+  <header class="topbar no-print"><span>@Config["Pillar:ChurchName"] <span class="muted">/ @ViewData["Title"]</span></span><span class="staff-badge">@(User.Identity?.IsAuthenticated == true ? "STAFF PORTAL" : "WELCOME HOME")</span></header>
+  <div class="page-content">
+    @if (TempData["Notice"] is string notice) { <div class="notice" role="status">@notice</div> }
+    @if (TempData["Problem"] is string problem) { <div class="error" role="alert">@problem</div> }
+    @RenderBody()
+  </div>
+  <footer class="no-print">Pillar Family · Member care, thoughtfully connected.</footer>
+</main>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,12 @@
+@page
+@model Pillar.Pages.Account.LoginModel
+@{ ViewData["Title"] = "Staff sign in"; }
+<div class="login-grid">
+  <section class="welcome-panel"><div class="eyebrow">PILLAR FAMILY</div><h1>People at the<br />heart of it all.</h1><p>A shared place to care for your church family, celebrate growth, and stay connected.</p><div class="welcome-art" aria-hidden="true"><i></i><i></i><i></i></div><span class="small">MEMBERS · FAMILIES · COMMUNITY</span></section>
+  <section class="login-form"><span class="eyebrow">GOOD TO SEE YOU</span><h2>Welcome back.</h2><p class="muted">Sign in to your staff account to continue.</p>
+  <form method="post"><div asp-validation-summary="All" class="validation"></div><input type="hidden" asp-for="ReturnUrl" />
+    <label asp-for="Email"></label><input asp-for="Email" autocomplete="username" />
+    <label asp-for="Password"></label><input asp-for="Password" autocomplete="current-password" />
+    <button class="button full">Sign in <span>→</span></button>
+  </form><p class="small muted">Staff access is provided by your church administrator.</p></section>
+</div>

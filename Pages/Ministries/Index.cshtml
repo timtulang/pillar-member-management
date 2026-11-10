@@ -1,0 +1,6 @@
+@page
+@model Pillar.Pages.Ministries.IndexModel
+@{ViewData["Title"]="Ministries & growth";}
+<div class="page-heading"><div><span class="eyebrow">GIFTS INTO SERVICE</span><h1>Room to serve. Space to grow.</h1><p>Manage ministry options and discipleship programs. Assign people from their profiles.</p></div></div>
+<section class="panel"><form method="post" class="filters"><label class="sr-only" for="kind">Category</label><select id="kind" name="kind"><option value="ministry">Ministry</option><option value="program">Discipleship program</option><option value="role">Ministry role</option></select><label class="sr-only" for="catalog-name">Name</label><input id="catalog-name" name="name" maxlength="150" placeholder="Name" required /><button class="button">+ Add</button></form></section>
+<div class="section-grid"><section class="panel"><h2>Ministries</h2>@foreach(var m in Model.Ministries){<div class="event-row"><strong>@m.S("name")</strong><span class="chip">@m.N("people") serving</span></div>}</section><section class="panel"><h2>Discipleship programs</h2>@foreach(var p in Model.Programs){<div class="event-row"><strong>@p.S("name")</strong><span class="chip">@p.N("people") enrolled</span></div>}</section></div>

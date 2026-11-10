@@ -1,0 +1,9 @@
+bin
+obj
+.git
+.keys
+.env
+artifacts
+tests
+*.log
+appsettings.Local.json

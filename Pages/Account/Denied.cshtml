@@ -1,0 +1,3 @@
+@page
+@{ ViewData["Title"] = "Access restricted"; Response.StatusCode = 403; }
+<section class="panel narrow"><h1>Access restricted</h1><p>Your account does not have permission for this page, or authenticator setup is still required.</p><a class="button" asp-page="/Account/Mfa">Account security</a> <a class="button secondary" asp-page="/Events/Index">Attendance</a></section>

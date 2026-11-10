@@ -1,0 +1,13 @@
+@page "{id:guid?}"
+@model Pillar.Pages.Members.EditModel
+@{ ViewData["Title"] = Model.Id==null ? "Add a member" : "Edit member"; }
+<a class="back-link" asp-page="Index">← Member directory</a><div class="page-heading"><div><span class="eyebrow">MEMBER CARE</span><h1>@ViewData["Title"]</h1><p>Start with the essentials. Unknown details can stay blank.</p></div></div>
+<form method="post" class="panel"><div asp-validation-summary="All" class="validation"></div><input type="hidden" asp-for="Input.Version" /><h2>Personal details</h2><div class="form-grid">
+<div><label asp-for="Input.FirstName"></label><input asp-for="Input.FirstName" required /></div><div><label asp-for="Input.Surname"></label><input asp-for="Input.Surname" required /></div>
+<div><label asp-for="Input.MiddleName"></label><input asp-for="Input.MiddleName" /></div><div><label asp-for="Input.Suffix"></label><input asp-for="Input.Suffix" /></div>
+<div><label asp-for="Input.PreferredName"></label><input asp-for="Input.PreferredName" /></div><div><label asp-for="Input.Gender"></label><input asp-for="Input.Gender" /></div>
+<div><label asp-for="Input.BirthDate"></label><input asp-for="Input.BirthDate" /></div><div><label asp-for="Input.CivilStatus"></label><select asp-for="Input.CivilStatus">@foreach(var s in MemberInput.CivilStatuses){<option value="@s">@s</option>}</select></div>
+<div><label asp-for="Input.ChildCount"></label><input asp-for="Input.ChildCount" /></div><div><label asp-for="Input.DeceasedOn"></label><input asp-for="Input.DeceasedOn" /></div></div>
+<h2 class="form-section">Contact information</h2><div class="form-grid"><div><label asp-for="Input.Phone"></label><input asp-for="Input.Phone" type="tel" /></div><div><label asp-for="Input.Email"></label><input asp-for="Input.Email" /></div><div class="span-two"><label asp-for="Input.Address"></label><textarea asp-for="Input.Address" rows="2"></textarea></div></div>
+<h2 class="form-section">Church connection</h2><div class="form-grid"><div><label asp-for="Input.Status"></label><select asp-for="Input.Status">@foreach(var s in MemberInput.Statuses){<option value="@s">@s.Replace('_',' ')</option>}</select></div><div><label asp-for="Input.MembershipDate"></label><input asp-for="Input.MembershipDate" /></div><div><label asp-for="Input.Inviter"></label><input asp-for="Input.Inviter" /></div></div>
+<div class="form-actions"><button class="button">Save member</button><a class="button secondary" asp-page="Index">Cancel</a></div></form>
