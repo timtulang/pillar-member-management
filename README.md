@@ -51,7 +51,7 @@ dotnet build
 
 Supply an Npgsql connection string through `ConnectionStrings__Pillar` in your deployment secret manager, or `dotnet user-secrets` during local development. Do not commit the real value. Neon supplies URI-style strings too; this app expects **Npgsql key=value format**:
 
-For local work, set `ASPNETCORE_ENVIRONMENT=Development` before starting the app or running the staff-provisioning command. User secrets are loaded only in Development. Production requires the private persistent key directory and verified TLS configuration described below.
+For local work, set `ASPNETCORE_ENVIRONMENT=Development` before starting the app or running the staff-provisioning command. User secrets are loaded only in Development. Production requires persistent data-protection keys (a private directory, or database storage for Vercel) and verified TLS as described below. Development also loads the ignored `appsettings.Local.json`; environment variables take precedence.
 
 ```text
 Host=ep-YOUR-ENDPOINT-pooler.REGION.aws.neon.tech;Port=5432;Database=neondb;Username=pillar_app;Password=YOUR_SECRET;SSL Mode=VerifyFull;Channel Binding=Require;Pooling=true;Maximum Pool Size=20;Timeout=15;Command Timeout=30
@@ -68,7 +68,7 @@ Configuration variables:
 | `Pillar__TimeZone` | Defaults to `Asia/Manila`; event times use their recorded timezone |
 | `Pillar__CardValidityDays` | Defaults to `365` |
 | `AllowedHosts` | Your app's hostname, e.g. `members.example.org`; local defaults are localhost and 127.0.0.1 |
-| `Security__DataProtectionKeyPath` | Private persistent directory for authentication/data-protection keys; required in production |
+| `Security__DataProtectionKeyPath` | Private persistent directory for authentication/data-protection keys when using FileSystem storage |
 | `Security__TrustedProxies__0` | Your actual reverse proxy IP, only when running behind a proxy; add numbered entries as needed |
 | `Security__RequireMfa` | Defaults to `true`; disabling is accepted only in Development |
 
@@ -126,7 +126,9 @@ docker build -t pillar-members .
 
 The container runs as a non-root user and listens on port 8080. Supply secrets at runtime, persist `/app/keys`, and terminate HTTPS at your trusted reverse proxy. Configure the actual proxy IP(s), `AllowedHosts`, and your public hostname. The app honors forwarded protocol/client-IP headers only from trusted proxies, uses secure cookies in production, and redirects HTTP to HTTPS. Do not expose the internal HTTP listener directly to the internet.
 
-This application is a real .NET server; static-only hosts and Cloudflare Worker-only hosting cannot run it directly.
+For Vercel, use its Container runtime and follow [the Vercel deployment guide](docs/VERCEL.md). Database-backed, certificate-encrypted data-protection keys and the additive SQL migration are included.
+
+This application is a real .NET server; static-only hosting cannot run it directly.
 
 ## Family workflow
 
@@ -161,3 +163,25 @@ Dates use `[start, end)` periods: the end date is the first date on which the re
 See `tests/README.md`. Tests must target a disposable local database and synthetic staff accounts. They create synthetic family/event records and exercise destructive corrections to those records. Never point them at your production Neon database.
 
 The application does not run migrations on startup. Commit and review future database migrations separately; `neon-setup.sql` is only for first installation.
+
+## Staff workflows
+
+- Member forms use controlled gender choices and readable status labels. Phone,
+  email, child counts, and related dates are checked on the server. Existing
+  nonstandard gender text remains visible when editing; choose a listed value or
+  Not provided before saving that profile.
+- Administrators and membership managers can create single events or daily,
+  weekly, and monthly repeats. Choose an interval and 2–52 occurrences (including
+  the first). All occurrences are created together with separate attendance lists
+  and audit records. Times follow the selected local timezone; monthly repeats
+  clamp to the month's last day when necessary. An invalid or ambiguous
+  daylight-saving time rejects the entire schedule. Occurrences are managed
+  individually; this does not create an indefinitely repeating background job.
+- Ministries & growth uses compact Ministry / Program tabs with searchable, expandable rosters and profile links.
+  Ministry rosters show current assignments. Program rosters distinguish reported
+  participation, in progress, completed, and paused records.
+- Overview demographics show age, gender, church status, and reported civil status.
+  They include unarchived profiles without a recorded date of death. Missing
+  details remain in the totals, and ages use the configured church timezone.
+
+These features use the existing database schema; no database migration is needed.

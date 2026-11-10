@@ -10,12 +10,13 @@ using Pillar.Security;
 using Pillar.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.Configure<ForwardedHeadersOptions>(o =>
+if (builder.Environment.IsDevelopment())
 {
-    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    foreach (var proxy in builder.Configuration.GetSection("Security:TrustedProxies").Get<string[]>() ?? [])
-        o.KnownProxies.Add(System.Net.IPAddress.Parse(proxy));
-});
+    builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: false)
+        .AddEnvironmentVariables();
+    if (args.Length > 0) builder.Configuration.AddCommandLine(args);
+}
+builder.Services.Configure<ForwardedHeadersOptions>(o => HostingSecurity.ConfigureProxy(o, builder.Configuration));
 builder.Services.AddHttpsRedirection(o => o.HttpsPort = 443);
 var connection = builder.Configuration.GetConnectionString("Pillar");
 if (string.IsNullOrWhiteSpace(connection)) throw new InvalidOperationException("Set ConnectionStrings__Pillar to your PostgreSQL connection string. See README.md.");
@@ -86,10 +87,7 @@ builder.Services.AddRateLimiter(o =>
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 150, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     o.AddFixedWindowLimiter("login", o => { o.PermitLimit = 30; o.Window = TimeSpan.FromMinutes(1); o.QueueLimit = 0; });
 });
-var protection = builder.Services.AddDataProtection().SetApplicationName("Pillar.MemberManagement");
-var keyPath = builder.Configuration["Security:DataProtectionKeyPath"];
-if (!string.IsNullOrWhiteSpace(keyPath)) protection.PersistKeysToFileSystem(new DirectoryInfo(keyPath));
-else if (!builder.Environment.IsDevelopment()) throw new InvalidOperationException("Set Security__DataProtectionKeyPath to a private persistent directory.");
+HostingSecurity.AddKeyStorage(builder.Services, builder.Configuration, builder.Environment.IsDevelopment());
 
 var app = builder.Build();
 if (args.Contains("--identity-sql"))
@@ -99,6 +97,14 @@ if (args.Contains("--identity-sql"))
     return;
 }
 if (args.Contains("--create-staff")) { await StaffProvisioner.Run(app.Services, builder.Configuration); return; }
+if (string.Equals(builder.Configuration["Security:DataProtectionStore"], "Database", StringComparison.OrdinalIgnoreCase))
+{
+    // Fail during startup if the schema, permissions, or encryption certificate are wrong.
+    // This also initializes the shared encrypted key ring before accepting requests.
+    var probe = app.Services.GetRequiredService<IDataProtectionProvider>().CreateProtector("Pillar.StartupCheck");
+    const string expected = "key-storage-ready";
+    if (probe.Unprotect(probe.Protect(expected)) != expected) throw new InvalidOperationException("Data-protection startup check failed.");
+}
 app.UseForwardedHeaders();
 if (!app.Environment.IsDevelopment()) { app.UseExceptionHandler("/Error"); app.UseHsts(); app.UseHttpsRedirection(); }
 else app.UseExceptionHandler("/Error");

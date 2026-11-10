@@ -11,8 +11,8 @@
 @if (User.Identity?.IsAuthenticated == true)
 {
   <aside class="sidebar no-print">
-    <a class="brand" asp-page="/Index"><span class="brand-mark">P</span><span>PILLAR<small>FAMILY & COMMUNITY</small></span></a>
-    <div class="nav-label">CHURCH MANAGEMENT</div>
+    <div class="sidebar-header"><a class="brand" asp-page="/Index"><span class="brand-mark">P</span><span>PILLAR<small>FAMILY & COMMUNITY</small></span></a><button type="button" class="nav-toggle" aria-expanded="false" aria-controls="sidebar-content" hidden>Menu</button></div>
+    <div class="sidebar-content" id="sidebar-content"><div class="nav-label">CHURCH MANAGEMENT</div>
     <nav aria-label="Main navigation">
     @if (User.IsInRole("administrator") || User.IsInRole("membership_manager"))
     {
@@ -25,6 +25,7 @@
     @if (User.IsInRole("administrator")) { <a asp-page="/Staff/Index">Staff & access <span>→</span></a><a asp-page="/Staff/Audit">Activity log <span>→</span></a> }
     </nav>
     <div class="sidebar-bottom"><p>Every person.<br />A place to belong.</p><a asp-page="/Account/Mfa">Account security</a><form asp-page="/Account/Logout" method="post"><button class="text-button">Sign out</button></form></div>
+    </div>
   </aside>
 }
 <main class="@(User.Identity?.IsAuthenticated == true ? "workspace" : "public-workspace")">

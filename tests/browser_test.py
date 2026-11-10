@@ -141,9 +141,44 @@ def main():
         assert query("SELECT count(*) FROM pillar.discipleship_enrollments WHERE person_id=%s", (son[0],), True)[0] == 1
         print("PASS ministry, discipleship, and baptism records", flush=True)
 
+        page.goto(BASE + "/Ministries")
+        music = page.locator(".catalog-row").filter(has=page.locator(".catalog-name").filter(has_text=re.compile("^Music$")))
+        music.locator("summary").click()
+        expect(music.get_by_role("link", name=re.compile("Daniel"))).to_be_visible()
+        music.locator('[data-roster-search]').fill("no such synthetic member")
+        expect(music.locator('[data-roster-empty]')).to_be_visible()
+        music.locator('[data-roster-search]').fill("Daniel")
+        expect(music.get_by_role("link", name=re.compile("Daniel"))).to_be_visible()
+        page.goto(BASE + "/")
+        expect(page.locator(".demographic-card")).to_have_count(4)
+        assert page.locator(".demographic-list meter").count() > 0
+        print("PASS searchable ministry rosters and demographic charts", flush=True)
+
+        page.goto(BASE + "/Events")
+        page.get_by_text("+ Create an event", exact=True).click()
+        future = datetime.now(timezone.utc) + timedelta(days=7)
+        page.get_by_label("Event name", exact=True).fill("Recurring fixture " + RUN)
+        page.get_by_label("Starts at", exact=True).fill(future.strftime("%Y-%m-%dT09:00"))
+        page.get_by_label("Ends at", exact=True).fill(future.strftime("%Y-%m-%dT10:00"))
+        page.get_by_label("Timezone", exact=True).fill("UTC")
+        page.get_by_label("Repeat", exact=True).select_option("weekly")
+        page.get_by_label("Repeat every", exact=True).fill("2")
+        page.get_by_label("Number of occurrences", exact=True).fill("3")
+        page.get_by_role("button", name="Create recurring events", exact=True).click()
+        expect(page.locator(".notice")).to_contain_text("3 events created")
+        repeated = query("SELECT id, starts_at FROM pillar.event_occurrences WHERE title=%s ORDER BY starts_at", ("Recurring fixture " + RUN,))
+        assert len(repeated) == 3
+        assert repeated[1][1] - repeated[0][1] == timedelta(days=14)
+        assert query("SELECT count(*) FROM pillar.audit_events WHERE entity_id=ANY(%s) AND action='event.created'", ([row[0] for row in repeated],), True)[0] == 3
+        bad = post(page, "/Events", {"Input.Title": "Invalid fixture " + RUN, "Input.StartsAt": future.strftime("%Y-%m-%dT09:00"), "Input.EndsAt": future.strftime("%Y-%m-%dT10:00"), "Input.TimeZone": "UTC", "Input.Repeat": "weekly", "Input.Occurrences": "1000"})
+        assert bad.status == 200 and "between 2 and 52" in bad.text()
+        assert query("SELECT count(*) FROM pillar.event_occurrences WHERE title=%s", ("Invalid fixture " + RUN,), True)[0] == 0
+        print("PASS recurring event creation, audit records, and rejection of invalid schedules", flush=True)
+
+
         page.goto(BASE + "/Events")
         now = datetime.now(timezone.utc)
-        success(post(page, "/Events", {"title": "Test gathering " + RUN, "startsAt": (now - timedelta(minutes=15)).strftime("%Y-%m-%dT%H:%M"), "endsAt": (now + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M"), "timeZone": "UTC", "minutesBefore": "60", "minutesAfter": "30"}))
+        success(post(page, "/Events", {"Input.Title": "Test gathering " + RUN, "Input.StartsAt": (now - timedelta(minutes=15)).strftime("%Y-%m-%dT%H:%M"), "Input.EndsAt": (now + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M"), "Input.TimeZone": "UTC", "Input.MinutesBefore": "60", "Input.MinutesAfter": "30"}))
         event = query("SELECT id FROM pillar.event_occurrences WHERE title=%s", ("Test gathering " + RUN,), True)[0]
         event_path = f"/Events/Details/{event}"
         page.goto(BASE + f"/Members/Card/{son[0]}")
@@ -234,10 +269,26 @@ def main():
         page.screenshot(path=str(ARTIFACTS / "dashboard.png"), full_page=True)
         page.goto(BASE + detail)
         page.screenshot(path=str(ARTIFACTS / "member-family-history.png"), full_page=True)
-        page.set_viewport_size({"width": 390, "height": 844})
-        page.goto(BASE + "/Members")
-        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
-        page.screenshot(path=str(ARTIFACTS / "mobile-members.png"), full_page=True)
+        for width in (320, 390, 430, 768):
+            page.set_viewport_size({"width": width, "height": 844})
+            for path in ("/", "/Members", "/Members/Edit", detail, "/Ministries", "/Events", "/Staff"):
+                page.goto(BASE + path)
+                assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), f"Page overflow at {width}px: {path}"
+            page.goto(BASE + "/Ministries")
+            page.get_by_role("tab", name=re.compile("^Programs")).click()
+            expect(page.locator("#programs-list")).to_be_visible()
+            expect(page.locator("#ministries-list")).to_be_hidden()
+            page.get_by_role("tab", name=re.compile("^Ministries")).click()
+            page.locator(".catalog-row").filter(has=page.locator(".catalog-name").filter(has_text=re.compile("^Music$"))).locator("summary").click()
+            assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+            if width <= 760:
+                menu = page.get_by_role("button", name="Menu", exact=True)
+                expect(page.get_by_role("navigation", name="Main navigation")).to_be_hidden()
+                menu.click()
+                expect(page.get_by_role("navigation", name="Main navigation")).to_be_visible()
+                page.get_by_role("button", name="Close menu", exact=True).press("Escape")
+                expect(page.get_by_role("navigation", name="Main navigation")).to_be_hidden()
+            page.screenshot(path=str(ARTIFACTS / f"mobile-ministries-{width}.png"), full_page=True)
         assert not errors, "Browser JavaScript error detected"
         print("PASS closed/cancelled event rejection, desktop/mobile rendering, and no JavaScript errors", flush=True)
         browser.close()

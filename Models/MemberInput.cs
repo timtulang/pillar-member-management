@@ -12,7 +12,7 @@ public class MemberInput : IValidatableObject
     [StringLength(50)] public string? Gender { get; set; }
     [DataType(DataType.Date), Display(Name = "Birthday")] public DateTime? BirthDate { get; set; }
     [StringLength(2000), Display(Name = "Residential address")] public string? Address { get; set; }
-    [StringLength(40)] public string? Phone { get; set; }
+    [Phone, StringLength(40)] public string? Phone { get; set; }
     [EmailAddress, StringLength(254)] public string? Email { get; set; }
     [Required, Display(Name = "Church status")] public string Status { get; set; } = "visitor";
     [DataType(DataType.Date), Display(Name = "Membership date")] public DateTime? MembershipDate { get; set; }
@@ -23,12 +23,16 @@ public class MemberInput : IValidatableObject
     public long Version { get; set; }
     public static string[] Statuses => ["visitor", "regular_attendee", "member", "inactive", "transferred"];
     public static string[] CivilStatuses => ["unknown", "single", "married", "separated", "divorced", "widowed", "other"];
+    public static string[] Genders => ["male", "female", "non_binary", "other", "prefer_not_to_say"];
+    public static string? NormalizeGender(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToLowerInvariant().Replace('-', '_').Replace(' ', '_');
     public IEnumerable<ValidationResult> Validate(ValidationContext context)
     {
         if (string.IsNullOrWhiteSpace(FirstName) || string.IsNullOrWhiteSpace(Surname)) yield return new("Names cannot be blank.");
         if (!Statuses.Contains(Status)) yield return new("Choose a valid church status.", [nameof(Status)]);
         if (!CivilStatuses.Contains(CivilStatus)) yield return new("Choose a valid civil status.", [nameof(CivilStatus)]);
+        if (NormalizeGender(Gender) is string gender && !Genders.Contains(gender)) yield return new("Choose a gender from the list, or select Not provided.", [nameof(Gender)]);
         if (BirthDate > DateTime.UtcNow.Date) yield return new("Birthday cannot be in the future.", [nameof(BirthDate)]);
+        if (MembershipDate < BirthDate) yield return new("Membership date cannot be before the birthday.", [nameof(MembershipDate)]);
         if (DeceasedOn < BirthDate || DeceasedOn > DateTime.UtcNow.Date) yield return new("Check the date of death.", [nameof(DeceasedOn)]);
     }
 }

@@ -27,3 +27,33 @@ The browser test covers MFA enrollment/login; member creation; household history
 The database test exercises temporal exclusion constraints, ancestry cycles, overlapping marriages across spouse columns, one main ministry, one unrevoked card, card/person foreign keys, attendance uniqueness, manual-entry checks, append-only audit permissions, schema-change denial, and concurrent graph mutations. Transactional fixtures are rolled back; the concurrency fixtures are explicitly removed.
 
 Physical phone/USB hardware and a real Neon deployment require their own acceptance check. The camera test runs the actual decoder/scanner against a generated ID image streamed through a browser canvas; it does not claim a physical camera was tested.
+
+## Form and dashboard checks
+
+Run `dotnet run --project tests/FeatureChecks` for database-independent validation,
+recurrence (including month ends and daylight-saving transitions), demographic
+presentation, and rendering of the actual Razor forms. No real accounts or data
+are used. An optional output directory writes synthetic HTML and the demographic
+SQL query for further inspection.
+
+Run `python3 tests/dashboard_sql_test.py` to verify demographic totals, age boundaries,
+legacy values, roster eligibility, progress counts, and event ordering against a
+fresh disposable PostgreSQL cluster. It requires `initdb` and `postgres` on PATH,
+uses no network connection, and deletes its temporary cluster afterward.
+
+The browser suite also checks 320, 390, 430, and 768 pixel layouts across the
+overview, directory, member forms and profiles, ministries, events, and staff
+access. It exercises the Ministry / Program tabs and collapsed mobile navigation,
+including Escape-key behavior, and checks for page-level horizontal overflow.
+These are browser viewport checks; physical iOS and Android testing is separate.
+
+## Vercel security checks
+
+Run `dotnet run --project tests/SecurityChecks` for certificate-encrypted key
+storage, cross-instance session decryption, certificate rotation, configuration
+failures, and the Vercel/default proxy trust boundaries. The key repository is
+in-memory; this test never connects to a real database.
+
+Run `python3 tests/key_storage_sql_test.py` for the actual PostgreSQL migration,
+restricted grants, idempotency, and preservation of existing keys. It uses an
+offline disposable PostgreSQL cluster and requires `initdb` and `postgres`.

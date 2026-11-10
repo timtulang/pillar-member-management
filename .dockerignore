@@ -7,3 +7,5 @@ artifacts
 tests
 *.log
 appsettings.Local.json
+
+Other Files

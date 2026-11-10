@@ -1,6 +1,68 @@
 @page
 @model Pillar.Pages.Ministries.IndexModel
-@{ViewData["Title"]="Ministries & growth";}
-<div class="page-heading"><div><span class="eyebrow">GIFTS INTO SERVICE</span><h1>Room to serve. Space to grow.</h1><p>Manage ministry options and discipleship programs. Assign people from their profiles.</p></div></div>
-<section class="panel"><form method="post" class="filters"><label class="sr-only" for="kind">Category</label><select id="kind" name="kind"><option value="ministry">Ministry</option><option value="program">Discipleship program</option><option value="role">Ministry role</option></select><label class="sr-only" for="catalog-name">Name</label><input id="catalog-name" name="name" maxlength="150" placeholder="Name" required /><button class="button">+ Add</button></form></section>
-<div class="section-grid"><section class="panel"><h2>Ministries</h2>@foreach(var m in Model.Ministries){<div class="event-row"><strong>@m.S("name")</strong><span class="chip">@m.N("people") serving</span></div>}</section><section class="panel"><h2>Discipleship programs</h2>@foreach(var p in Model.Programs){<div class="event-row"><strong>@p.S("name")</strong><span class="chip">@p.N("people") enrolled</span></div>}</section></div>
+@{ ViewData["Title"] = "Ministries & growth"; }
+<div class="page-heading"><div><span class="eyebrow">GIFTS INTO SERVICE</span><h1>Room to serve. Space to grow.</h1><p>See who is serving, follow discipleship progress, and open a profile to update involvement.</p></div></div>
+<div class="catalog-overview"><span><strong>@Model.ServingPeople</strong> people serving</span><span><strong>@Model.LearningPeople</strong> people learning</span><a asp-page="/Members/Index">Member directory →</a></div>
+<details class="catalog-create"><summary>+ Add a ministry, program, or role</summary><form method="post" class="filters" data-catalog-form><label class="sr-only" for="kind">Category</label><select id="kind" name="kind"><option value="ministry">Ministry</option><option value="program">Discipleship program</option><option value="role">Ministry role</option></select><label class="sr-only" for="catalog-name">Name</label><input id="catalog-name" name="name" maxlength="150" placeholder="Name" required /><button class="button">Add</button></form></details>
+<div class="catalog" data-catalog>
+    <div class="catalog-tabs" role="tablist" aria-label="Ministries and discipleship" hidden>
+        <button type="button" role="tab" id="ministries-tab" aria-controls="ministries-list" aria-selected="true" tabindex="0">Ministries <span>@Model.Ministries.Count</span></button>
+        <button type="button" role="tab" id="programs-tab" aria-controls="programs-list" aria-selected="false" tabindex="-1">Programs <span>@Model.Programs.Count</span></button>
+    </div>
+
+    <section id="ministries-list" aria-labelledby="ministries-title" data-catalog-section>
+        <div class="section-heading catalog-section-heading"><h2 id="ministries-title">Ministries</h2><span class="subtle-count">@Model.Ministries.Count</span></div>
+        @if (Model.Ministries.Count == 0) { <div class="empty"><h3>A place for every gift.</h3><p>Add a ministry above, then assign people from their profiles.</p></div> }
+        @foreach (var m in Model.Ministries)
+        {
+            var roster = Model.MinistryRosters[m.G("id")].ToList();
+            <details class="catalog-row" data-roster>
+                <summary><span class="catalog-name">@m.S("name")</span><span class="catalog-count">@roster.Count <span>serving</span></span><span class="catalog-chevron" aria-hidden="true">›</span></summary>
+                <div class="catalog-roster">
+                @if (roster.Count == 0) { <p class="muted small">No current assignments. Open a member's profile to add one.</p> }
+                else
+                {
+
+                        <label class="sr-only" for="ministry-@m.G("id")">Find a person in @m.S("name")</label><input id="ministry-@m.G("id")" type="search" placeholder="Find by name or member ID" maxlength="150" data-roster-search />
+                        <ul class="roster-list">
+                            @foreach (var p in roster)
+                            {
+                                <li data-roster-person><a class="person-row" asp-page="/Members/Details" asp-route-id="@p.G("person_id")"><span class="avatar" aria-hidden="true">@p.S("first_name").FirstOrDefault()</span><span class="grow"><strong>@p.S("first_name") @p.S("surname")</strong><small>@p.S("member_code") · @(string.IsNullOrEmpty(p.S("role_name")) ? "Role not specified" : p.S("role_name"))</small></span>@if (p.B("is_main")) { <span class="chip">Main</span> }<span aria-hidden="true">→</span></a></li>
+                            }
+                        </ul><p class="muted small" data-roster-empty hidden>No people match this search.</p>
+
+                }
+                </div>
+            </details>
+        }
+    </section>
+    <section id="programs-list" aria-labelledby="programs-title" data-catalog-section>
+        <div class="section-heading catalog-section-heading"><h2 id="programs-title">Discipleship programs</h2><span class="subtle-count">@Model.Programs.Count</span></div>
+        @if (Model.Programs.Count == 0) { <div class="empty"><h3>Make room for growth.</h3><p>Add a program above, then record participation from a member's profile.</p></div> }
+        @foreach (var program in Model.Programs)
+        {
+            var roster = Model.ProgramRosters[program.G("id")].ToList();
+            <details class="catalog-row" data-roster>
+                <summary><span class="catalog-name">@program.S("name")</span><span class="catalog-count">@roster.Count <span>participants</span></span><span class="catalog-chevron" aria-hidden="true">›</span></summary>
+                <div class="catalog-roster">
+                @if (roster.Count == 0) { <p class="muted small">No participation recorded. Open a member's profile to enroll them.</p> }
+                else
+                {
+                    <p class="small muted">@roster.Count(p => p.S("status") == "in_progress") in progress · @roster.Count(p => p.S("status") == "completed") completed · @roster.Count(p => p.S("status") == "paused") paused · @roster.Count(p => p.S("status") == "reported_participation") reported</p>
+
+                        <label class="sr-only" for="program-@program.G("id")">Find a person in @program.S("name")</label><input id="program-@program.G("id")" type="search" placeholder="Find by name or member ID" maxlength="150" data-roster-search />
+                        <ul class="roster-list">
+                            @foreach (var p in roster)
+                            {
+                                <li data-roster-person><a class="person-row" asp-page="/Members/Details" asp-route-id="@p.G("person_id")"><span class="grow"><strong>@p.S("first_name") @p.S("surname")</strong><small>@p.S("member_code") · Started @p.Date("started_on")@if (p.T("completed_on") != null) { <text> · Completed @p.Date("completed_on")</text> }</small></span><span class="chip">@DisplayLabels.Text(p.S("status"))</span><span aria-hidden="true">→</span></a></li>
+                            }
+                        </ul><p class="muted small" data-roster-empty hidden>No people match this search.</p>
+
+                }
+                </div>
+            </details>
+        }
+    </section>
+</div>
+
+<p class="catalog-note">Tap a row to view people. Open a profile to update assignments or progress. Rosters exclude archived and deceased profiles; ministry assignments must be current.</p>

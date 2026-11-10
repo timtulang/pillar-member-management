@@ -5,9 +5,29 @@
 <div class="stats-grid"><article class="stat"><span>People in our family</span><strong>@Model.Stats.N("people")</strong><small>Active profiles</small></article><article class="stat"><span>Family households</span><strong>@Model.Stats.N("households")</strong><small>Growing together</small></article><article class="stat"><span>Attendance</span><strong>@Model.Stats.N("attendance")</strong><small>Check-ins in the last 30 days</small></article><article class="stat"><span>Ministries</span><strong>@Model.Stats.N("ministries")</strong><small>Places to serve</small></article></div>
 <div class="section-grid"><section class="panel"><div class="section-heading"><h2>Recently added</h2><a asp-page="/Members/Index">All members →</a></div>
 @if (Model.RecentMembers.Count == 0) { <div class="empty"><span class="empty-mark">＋</span><h3>Your community starts here.</h3><p>Add your first member to begin building your directory.</p><a asp-page="/Members/Edit">Add a member →</a></div> }
-@foreach(var p in Model.RecentMembers) { <a class="person-row" asp-page="/Members/Details" asp-route-id="@p.G("id")"><span class="avatar">@p.S("first_name")[0]@p.S("surname")[0]</span><span><strong>@p.S("first_name") @p.S("surname")</strong><small>@p.S("member_code")</small></span><span class="chip">@p.S("congregation_status").Replace('_',' ')</span></a> }
+@foreach(var p in Model.RecentMembers) { <a class="person-row" asp-page="/Members/Details" asp-route-id="@p.G("id")"><span class="avatar">@p.S("first_name")[0]@p.S("surname")[0]</span><span><strong>@p.S("first_name") @p.S("surname")</strong><small>@p.S("member_code")</small></span><span class="chip">@DisplayLabels.Text(p.S("congregation_status"))</span></a> }
 </section><section class="panel"><div class="section-heading"><h2>Gatherings & attendance</h2><a asp-page="/Events/Index">View all →</a></div>
 @if (Model.Events.Count == 0) { <div class="empty"><span class="empty-mark">◷</span><h3>Make room for your next gathering.</h3><p>Create a service to start tracking attendance.</p><a asp-page="/Events/Index">Create an event →</a></div> }
 @foreach(var e in Model.Events) { <a class="event-row" asp-page="/Events/Details" asp-route-id="@e.G("id")"><span><strong>@e.S("title")</strong><small>@TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(e.T("starts_at")!.Value, DateTimeKind.Utc),TimeZoneInfo.FindSystemTimeZoneById(e.S("time_zone"))).ToString("ddd, dd MMM · h:mm tt")</small></span><span class="count">@e.N("attendance") <small>checked in</small></span></a> }
 </section></div>
+<section class="demographics" aria-labelledby="demographics-title">
+    <div class="section-heading"><div><span class="eyebrow">KNOW YOUR COMMUNITY</span><h2 id="demographics-title">Our people, at a glance</h2><p class="small muted">@Model.DemographicPeople.ToString("N0") unarchived profiles with no recorded date of death. Ages use the church's local date; missing details are included in the totals.</p></div></div>
+    @if (Model.DemographicPeople == 0) { <div class="panel empty"><h3>Demographics will appear here.</h3><p>Add member profiles to see your community's age groups, gender, and membership breakdown.</p></div> }
+    else
+    {
+        <div class="section-grid demographic-grid">
+            @foreach (var group in Model.Demographics)
+            {
+                <article class="panel demographic-card"><div class="section-heading"><h3>@group.Title</h3><span class="small muted">@group.Total.ToString("N0") people</span></div>
+                    <ul class="demographic-list">
+                        @foreach (var bucket in group.Buckets)
+                        {
+                            <li><div class="demographic-label"><span>@bucket.Label</span><span><strong>@bucket.Count.ToString("N0")</strong> <small>@group.Percentage(bucket.Count)</small></span></div><meter min="0" max="@Math.Max(group.Total, 1)" value="@bucket.Count" aria-label="@bucket.Label: @bucket.Count of @group.Total people">@bucket.Count</meter></li>
+                        }
+                    </ul>
+                </article>
+            }
+        </div>
+    }
+</section>
 <section class="care-banner"><div><span class="eyebrow">A FAMILY THROUGH EVERY SEASON</span><h2>Keep the story connected.</h2><p>Follow family relationships as children grow, couples marry, and new households begin.</p></div><a class="button secondary" asp-page="/Families/Index">Explore families →</a></section>

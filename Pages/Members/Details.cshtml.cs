@@ -96,6 +96,9 @@ public class DetailsModel(Db db, MemberService members) : AppPage
     public Task<IActionResult> OnPostProgressAsync(Guid programId,string status,DateTime? startedOn,DateTime? completedOn) => Change(async()=>
     {
         if(!new[]{"reported_participation","in_progress","completed","paused"}.Contains(status))throw new InvalidOperationException("Choose a valid progress status.");
+        if(completedOn<startedOn)throw new InvalidOperationException("Completion date cannot be before the start date.");
+        if(completedOn>DateTime.UtcNow.Date)throw new InvalidOperationException("Completion date cannot be in the future.");
+        if(completedOn!=null && status!="completed")throw new InvalidOperationException("Choose Completed when recording a completion date.");
         await db.Execute(Actor,"discipleship.updated","people",Id,"""
             INSERT INTO pillar.discipleship_enrollments(person_id,program_id,status,started_on,completed_on)
             VALUES(@Id,@programId,CAST(@status AS pillar.discipleship_status),@startedOn,@completedOn)
@@ -106,6 +109,7 @@ public class DetailsModel(Db db, MemberService members) : AppPage
     public Task<IActionResult> OnPostBaptismAsync(DateTime? baptizedOn,string location,string? churchName) => Change(async()=>
     {
         if(!new[]{"pillar","elsewhere","unknown"}.Contains(location)||churchName?.Length>200)throw new InvalidOperationException("Check the baptism details.");
+        if(baptizedOn>DateTime.UtcNow.Date)throw new InvalidOperationException("Baptism date cannot be in the future.");
         await db.Execute(Actor,"baptism.recorded","people",Id,"INSERT INTO pillar.baptisms(person_id,baptized_on,location,church_name) VALUES(@Id,@baptizedOn,CAST(@location AS pillar.baptism_location),@churchName)",new{Id,baptizedOn,location,churchName});
     },"Details",new{Id});
 

@@ -11,7 +11,7 @@ public sealed class MemberService(Db db)
         var id = existing ?? Guid.NewGuid();
         return db.Write(actor, existing == null ? "member.created" : "member.updated", "people", id, async (c, t) =>
         {
-            var args = new { id, m.FirstName, m.MiddleName, m.Surname, m.Suffix, m.PreferredName, m.Gender, m.BirthDate, m.Address, m.Phone, m.Email, m.Status, m.MembershipDate, m.CivilStatus, m.ChildCount, m.Inviter, m.DeceasedOn, m.Version };
+            var args = new { id, m.FirstName, m.MiddleName, m.Surname, m.Suffix, m.PreferredName, Gender = MemberInput.NormalizeGender(m.Gender), m.BirthDate, m.Address, m.Phone, m.Email, m.Status, m.MembershipDate, m.CivilStatus, m.ChildCount, m.Inviter, m.DeceasedOn, m.Version };
             var count = existing == null
                 ? await c.ExecuteAsync("""
                     INSERT INTO pillar.people(id,first_name,middle_name,surname,suffix,preferred_name,gender,birth_date,

@@ -1,7 +1,10 @@
 using Pillar.Data;
+using Pillar.Models;
 namespace Pillar.Pages;
-public class IndexModel(Db db) : AppPage
+public class IndexModel(Db db, IConfiguration config) : AppPage
 {
+    public IReadOnlyList<DemographicGroup> Demographics { get; set; } = [];
+    public long DemographicPeople => Demographics.FirstOrDefault()?.Total ?? 0;
     public Row Stats { get; set; } = null!;
     public List<Row> RecentMembers { get; set; } = [];
     public List<Row> Events { get; set; } = [];
@@ -13,6 +16,7 @@ public class IndexModel(Db db) : AppPage
             (SELECT count(*) FROM pillar.attendance_records WHERE voided_at IS NULL AND checked_in_at>=now()-interval '30 days') attendance,
             (SELECT count(*) FROM pillar.ministries WHERE is_active) ministries
             """))!;
+        Demographics = DemographicSummary.Build(await db.Read(DemographicSummary.Query, new { zone = config["Pillar:TimeZone"] ?? "Asia/Manila" }));
         RecentMembers = await db.Read("SELECT id,first_name,surname,member_code,congregation_status::text FROM pillar.people WHERE archived_at IS NULL ORDER BY created_at DESC LIMIT 6");
         Events = await db.Read("""
             SELECT e.id,e.title,e.starts_at,e.time_zone,count(a.id) attendance FROM pillar.event_occurrences e
